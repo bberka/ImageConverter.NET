@@ -2,7 +2,7 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImageConverter.NET.Lib", "src\ImageConverter.NET.Lib\ImageConverter.NET.Lib.csproj", "{AB36387F-AD52-4CBB-8FBD-909BF09ADB9B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImageConverter.NET.App", "src\ImageConverter.NET.App\ImageConverter.NET.App.csproj", "{1AA870F3-29D8-4E71-95C2-DE43A8B85A3D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ImageConverter.NET", "src\ImageConverter.NET\ImageConverter.NET.csproj", "{1AA870F3-29D8-4E71-95C2-DE43A8B85A3D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

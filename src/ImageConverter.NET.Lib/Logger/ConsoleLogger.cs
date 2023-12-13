@@ -19,6 +19,10 @@ public static class ConsoleLogger
     Console.WriteLine(message);
   }
 
+  public static void Log() {
+    Console.WriteLine();
+  }
+
   /// <summary>
   ///   Writes log to console with given color. Creates new line.
   /// </summary>

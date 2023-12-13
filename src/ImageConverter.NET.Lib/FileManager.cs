@@ -1,6 +1,4 @@
-﻿using ImageConverter.NET.Lib.Logger;
-
-namespace ImageConverter.NET.Lib;
+﻿namespace ImageConverter.NET.Lib;
 
 public static class FileManager
 {
@@ -58,5 +56,16 @@ Enter input folder: ");
     }
 
     return files;
+  }
+
+  internal static void CheckFunctionParams(string imageFilePath, string outputFilePath, string inputExtension, string outputExtension) {
+    if (!File.Exists(imageFilePath))
+      throw new Exception("Input file does not exists");
+    if (File.Exists(outputFilePath))
+      throw new Exception("Output file already exists");
+    if (!imageFilePath.EndsWith(inputExtension, StringComparison.OrdinalIgnoreCase))
+      throw new Exception("Input file path must end with " + inputExtension + ": " + imageFilePath);
+    if (!outputFilePath.EndsWith(outputExtension, StringComparison.OrdinalIgnoreCase))
+      throw new Exception("Output file path must end with " + outputExtension + ": " + outputFilePath);
   }
 }
