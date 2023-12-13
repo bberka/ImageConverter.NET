@@ -5,18 +5,26 @@ namespace ImageConverter.NET;
 
 public static class ConsoleUIHelper
 {
+  public static Version Version => typeof(ImageConversionManager).Assembly.GetName().Version;
+  public  static string VersionText => $"ImageConverter.NET v{Version.Major}.{Version.Minor}.{Version.Build}.{Version.Revision}";
+  public static void WriteVersion() {
+    ConsoleLogger.Info(VersionText);
+    ConsoleLogger.Log();
+  }
   public static void PrintSelected(SupportedConversion conversion) {
     ConsoleLogger.Info("Selected: " + conversion.UIName);
   }
 
   public static void PrintUsage() {
     Console.Clear();
+    WriteVersion();
     var converters = ImageConversionManager.SupportedConversions.ToList();
     foreach (var item in converters) ConsoleLogger.Log($"{item.Id}. {item.UIName}");
     ConsoleLogger.Log("0. Exit");
   }
 
   public static uint GetChoice() {
+ 
     uint? choice = null;
     while (choice == null) {
       PrintUsage();
