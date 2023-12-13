@@ -21,6 +21,7 @@ try {
   var files = FileManager.FilterFiles(input, selectedConversionType.InputFormatString);
   if (files.Count == 0) throw new Exception($"No {selectedConversionType.InputFormatString} files found in input directory");
   foreach (var file in files) ImageConversionManager.Convert(file, file.Replace("." + selectedConversionType.InputFormatString, "." + selectedConversionType.OutputFormatString).Replace(input, output), selectedConversionType.InputFormat, selectedConversionType.OutputFormat);
+ ConsoleLogger.Info($"Converted {files.Count} number of files" );
 }
 catch (Exception e) {
   ConsoleLogger.Error($"Exception occurred: {e.Message}");
