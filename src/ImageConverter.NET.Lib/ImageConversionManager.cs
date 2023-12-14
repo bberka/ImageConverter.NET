@@ -15,8 +15,8 @@ public static class ImageConversionManager
   };
     
 
-  public static SupportedFormat GetSupportedConversion(int id) {
-    return Formats.SingleOrDefault(x => x.Id == id);
+  public static SupportedFormat? GetSupportedConversion(int id) {
+    return Formats.FirstOrDefault(x => x.Id == id);
   }
 
   public static void Convert(string imageFilePath, string outputFilePath, SupportedFormat inputFormat, SupportedFormat outputFormat) {

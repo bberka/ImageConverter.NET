@@ -15,29 +15,32 @@ public static class ConsoleUIHelper
   }
 
   public static SupportedFormat GetInputFormat() {
-    int? choice = null;
+    SupportedFormat? choice = null;
     while (choice == null) {
       PrintFormats();
       Console.Write("Enter input format: ");
       var choiceStr = Console.ReadLine();
       if (!int.TryParse(choiceStr, out var choiceInt)) continue;
-      choice = choiceInt;
+      choice = ImageConversionManager.GetSupportedConversion(choiceInt);
+      if (choice is null) continue;
     }
 
-    return ImageConversionManager.GetSupportedConversion(choice.Value);
+    return choice.Value;
   }
 
   public static SupportedFormat GetOutputFormat(int exceptId) {
-    int? choice = null;
+    SupportedFormat? choice = null;
     while (choice == null) {
       PrintFormats(exceptId);
       Console.Write("Enter output format: ");
       var choiceStr = Console.ReadLine();
       if (!int.TryParse(choiceStr, out var choiceInt)) continue;
       if (exceptId == choiceInt) continue;
-      choice = choiceInt;
+      choice = ImageConversionManager.GetSupportedConversion(choiceInt);
+      if (choice is null) continue;
     }
-    return ImageConversionManager.GetSupportedConversion(choice.Value);
+
+    return choice.Value;
   }
 
   public static void Exit() {
