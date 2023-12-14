@@ -6,40 +6,42 @@ namespace ImageConverter.NET;
 public static class ConsoleUIHelper
 {
   public static Version Version => typeof(ImageConversionManager).Assembly.GetName().Version;
-  public  static string VersionText => $"ImageConverter.NET v{Version.Major}.{Version.Minor}.{Version.Build}";
-  public static void PrintSelected(SupportedConversion conversion) {
-    ConsoleLogger.Info("Selected: " + conversion.UIName);
+  public static string VersionText => $"ImageConverter.NET v{Version.Major}.{Version.Minor}.{Version.Build}";
+
+
+  private static void PrintFormats(int? inputId = null) {
+    var formats = ImageConversionManager.Formats.Where(x => x.Id != inputId).ToList();
+    foreach (var item in formats) ConsoleLogger.Log($"{item.Id}. {item.FormatString}");
   }
 
-  public static void PrintUsage() {
-    Console.Clear();
-    var converters = ImageConversionManager.SupportedConversions.ToList();
-    foreach (var item in converters) ConsoleLogger.Log($"{item.Id}. {item.UIName}");
-    ConsoleLogger.Log("0. Exit");
-  }
-
-  public static uint GetChoice() {
- 
-    uint? choice = null;
+  public static SupportedFormat GetInputFormat() {
+    int? choice = null;
     while (choice == null) {
-      PrintUsage();
-      Console.WriteLine();
-      Console.Write("Enter your choice: ");
+      PrintFormats();
+      Console.Write("Enter input format: ");
       var choiceStr = Console.ReadLine();
-      if (!uint.TryParse(choiceStr, out var choiceInt)) continue;
+      if (!int.TryParse(choiceStr, out var choiceInt)) continue;
       choice = choiceInt;
     }
 
-    return choice.Value;
+    return ImageConversionManager.GetSupportedConversion(choice.Value);
+  }
+
+  public static SupportedFormat GetOutputFormat(int exceptId) {
+    int? choice = null;
+    while (choice == null) {
+      PrintFormats(exceptId);
+      Console.Write("Enter output format: ");
+      var choiceStr = Console.ReadLine();
+      if (!int.TryParse(choiceStr, out var choiceInt)) continue;
+      if (exceptId == choiceInt) continue;
+      choice = choiceInt;
+    }
+    return ImageConversionManager.GetSupportedConversion(choice.Value);
   }
 
   public static void Exit() {
     ConsoleLogger.Info("Exiting");
     Environment.Exit(0);
-  }
-
-
-  public static void ClearConsole() {
-    Console.Clear();
   }
 }

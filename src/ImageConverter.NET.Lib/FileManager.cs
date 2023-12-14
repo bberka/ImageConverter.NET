@@ -5,7 +5,8 @@ public static class FileManager
   private static string GetInputFolderDefault() {
     var inputFolder = Path.Combine(Directory.GetCurrentDirectory(), "input");
     if (!Directory.Exists(inputFolder))
-      throw new Exception("Input folder does not exists");
+      Directory.CreateDirectory(inputFolder);
+      // throw new Exception("Input folder does not exists");
     return inputFolder;
   }
 

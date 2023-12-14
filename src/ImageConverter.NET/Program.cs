@@ -2,30 +2,40 @@
 using ImageConverter.NET.Lib;
 using ImageConverter.NET.Lib.Logger;
 
-
-
 Console.Title = ConsoleUIHelper.VersionText;
 
-var choice = ConsoleUIHelper.GetChoice();
-if (choice == 0) ConsoleUIHelper.Exit();
-var selectedConversionType = ImageConversionManager.GetSupportedConversion(choice);
-if (selectedConversionType is null) ConsoleUIHelper.Exit();
+var inputFormat = ConsoleUIHelper.GetInputFormat();
+Console.Clear();
+ConsoleLogger.Info("Input Format: " + inputFormat.FormatString);
+Console.WriteLine();
+var outputFormat = ConsoleUIHelper.GetOutputFormat(inputFormat.Id);
+Console.Clear();
+ConsoleLogger.Info("Input Format: " + inputFormat.FormatString);
+ConsoleLogger.Info("Output Format: " + outputFormat.FormatString);
+Console.WriteLine();
+var inputDirectory = FileManager.GetInputFolderConsoleInput();
+Console.Clear();
+ConsoleLogger.Info("Input Format: " + inputFormat.FormatString);
+ConsoleLogger.Info("Output Format: " + outputFormat.FormatString);
+ConsoleLogger.Info("Input Directory: " + inputDirectory);
+Console.WriteLine();
+var outputDirectory = FileManager.GetOutputFolderConsoleInput();
+Console.Clear();
+ConsoleLogger.Info("Input Format: " + inputFormat.FormatString);
+ConsoleLogger.Info("Output Format: " + outputFormat.FormatString);
+ConsoleLogger.Info("Input Directory: " + inputDirectory);
+ConsoleLogger.Info("Output Directory: " + outputDirectory);
+Console.WriteLine();
+
 try {
-  ConsoleUIHelper.ClearConsole();
-  ConsoleUIHelper.PrintSelected(selectedConversionType);
-  var input = FileManager.GetInputFolderConsoleInput();
-  ConsoleUIHelper.ClearConsole();
-  ConsoleUIHelper.PrintSelected(selectedConversionType);
-  ConsoleLogger.Info("Input folder:" + input);
-  var output = FileManager.GetOutputFolderConsoleInput();
-  ConsoleUIHelper.ClearConsole();
-  ConsoleUIHelper.PrintSelected(selectedConversionType);
-  ConsoleLogger.Info("Input folder: " + input);
-  ConsoleLogger.Info("Output folder: " + output);
-  var files = FileManager.FilterFiles(input, selectedConversionType.InputFormatString);
-  if (files.Count == 0) throw new Exception($"No {selectedConversionType.InputFormatString} files found in input directory");
-  foreach (var file in files) ImageConversionManager.Convert(file, file.Replace("." + selectedConversionType.InputFormatString, "." + selectedConversionType.OutputFormatString).Replace(input, output), selectedConversionType.InputFormat, selectedConversionType.OutputFormat);
- ConsoleLogger.Info($"Converted {files.Count} number of files" );
+  var files = FileManager.FilterFiles(inputDirectory, inputFormat.FormatString);
+  if (files.Count == 0) throw new Exception($"No {inputFormat.FormatString} files found in input directory");
+  foreach (var file in files) {
+    var outputFilePath = file.Replace("." + inputFormat.FormatString, "." + outputFormat.FormatString).Replace(inputDirectory, outputDirectory);
+    ImageConversionManager.Convert(file, outputFilePath, inputFormat, outputFormat);
+  }
+
+  ConsoleLogger.Info($"Converted {files.Count} number of files");
 }
 catch (Exception e) {
   ConsoleLogger.Error($"Exception occurred: {e.Message}");
