@@ -12,16 +12,13 @@ var selectedConversionType = ImageConversionManager.GetSupportedConversion(choic
 if (selectedConversionType is null) ConsoleUIHelper.Exit();
 try {
   ConsoleUIHelper.ClearConsole();
-  ConsoleUIHelper.WriteVersion();
   ConsoleUIHelper.PrintSelected(selectedConversionType);
   var input = FileManager.GetInputFolderConsoleInput();
   ConsoleUIHelper.ClearConsole();
-  ConsoleUIHelper.WriteVersion();
   ConsoleUIHelper.PrintSelected(selectedConversionType);
   ConsoleLogger.Info("Input folder:" + input);
   var output = FileManager.GetOutputFolderConsoleInput();
   ConsoleUIHelper.ClearConsole();
-  ConsoleUIHelper.WriteVersion();
   ConsoleUIHelper.PrintSelected(selectedConversionType);
   ConsoleLogger.Info("Input folder: " + input);
   ConsoleLogger.Info("Output folder: " + output);
