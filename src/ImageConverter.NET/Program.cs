@@ -3,41 +3,25 @@ using ImageConverter.NET.Lib.Logger;
 
 Console.Title = VersionManager.VersionText;
 ConsoleLogger.Info(VersionManager.VersionText);
-Console.Write("""
-              Enter nothing to use default input folder
-              Input folder:
-              """);
-var inputFolder = Console.ReadLine();
-inputFolder = string.IsNullOrEmpty(inputFolder)
-                ? FileManager.GetInputFolderDefault()
-                : inputFolder;
-if (!Directory.Exists(inputFolder)) {
-  ConsoleLogger.Error("Input folder does not exists or is not accessible: " + inputFolder);
+
+//OUT NAME
+Console.WriteLine("Enter out folder name for conversion: ");
+var folderNameForConversion = Console.ReadLine();
+if (string.IsNullOrEmpty(folderNameForConversion)) {
+  ConsoleLogger.Error("Invalid out folder name");
   Console.ReadLine();
   return;
 }
 
-Console.Write("""
-              Enter nothing to use default output folder
-              Output folder:
-              """);
-var outputFolder = Console.ReadLine();
-outputFolder = string.IsNullOrEmpty(outputFolder)
-                 ? FileManager.GetOutputFolderDefault()
-                 : outputFolder;
-if (!Directory.Exists(outputFolder))
-  Directory.CreateDirectory(outputFolder);
-
+//FORMAT
 foreach (var item in ImageConversionManager.Formats) ConsoleLogger.Log($"{item.Id}. {item.FormatString}");
 Console.Write("Output format: ");
 var choiceStr = Console.ReadLine();
 if (!int.TryParse(choiceStr, out var choiceInt)) {
   ConsoleLogger.Error("Invalid choice");
   Console.ReadLine();
-
   return;
 }
-
 var choice = ImageConversionManager.GetSupportedConversion(choiceInt);
 if (choice is null) {
   ConsoleLogger.Error("Invalid choice");
@@ -45,24 +29,37 @@ if (choice is null) {
   return;
 }
 
+
+var folderName = folderNameForConversion + "_" + choiceInt + "_" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+if (!Directory.Exists(folderName)) {
+  Directory.CreateDirectory(folderName);
+}
+var inputFolder = Path.Combine(Directory.GetCurrentDirectory(), "input");
 Console.Clear();
 ConsoleLogger.Info(VersionManager.VersionText);
 ConsoleLogger.Info("Input Folder: " + inputFolder);
-ConsoleLogger.Info("Output Folder: " + outputFolder);
+ConsoleLogger.Info("Out Folder Name For Conversion: " + folderNameForConversion);
 ConsoleLogger.Info("Output Format: " + choice.Value.FormatString);
 
 try {
+  var newInputFolderPath = Path.Combine(folderName, "input");
+  Directory.CreateDirectory(newInputFolderPath);
+  var newOutputFolderPath = Path.Combine(folderName, "output");
+  Directory.CreateDirectory(newOutputFolderPath);
   var imageFiles = FileManager.GetSupportedFormatImageFiles(inputFolder);
   if (imageFiles.Count == 0) throw new Exception("No files found in input directory");
   var convertedFileCount = 0;
   ConsoleLogger.Info($"{imageFiles.Count} files found in input directory");
   foreach (var imageFile in imageFiles)
     try {
-      var outputFilePath = imageFile.GetOutputFilePath("input", "output", choice.Value);
+      var outputFilePath = imageFile.GetOutputFilePath(inputFolder, newOutputFolderPath, choice.Value);
       var inputFormat = ImageConversionManager.GetSupportedConversionEnsureNotNull(imageFile.Extension);
       ImageConversionManager.Convert(imageFile.FilePath, outputFilePath, inputFormat, choice.Value);
       ConsoleLogger.Info($"Converted {imageFile.GetRelativePath(inputFolder)} to {choice.Value.FormatString}");
       convertedFileCount++;
+      var originalInputFilePath = imageFile.FilePath;
+      var newInputFilePath = imageFile.FilePath.Replace(inputFolder, newInputFolderPath);
+      File.Move(originalInputFilePath,newInputFilePath,true);
     }
     catch (Exception ex) {
       ConsoleLogger.Error($"Error occurred while converting file: {imageFile.GetRelativePath(inputFolder)} \n\tError: {ex.Message}");
