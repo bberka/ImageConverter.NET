@@ -53,12 +53,16 @@ try {
   foreach (var imageFile in imageFiles)
     try {
       var outputFilePath = imageFile.GetOutputFilePath(inputFolder, newOutputFolderPath, choice.Value);
+      var outFolder = Path.GetDirectoryName(outputFilePath);
+      if (!string.IsNullOrEmpty(outFolder) && !Directory.Exists(outFolder)) Directory.CreateDirectory(outFolder);
       var inputFormat = ImageConversionManager.GetSupportedConversionEnsureNotNull(imageFile.Extension);
       ImageConversionManager.Convert(imageFile.FilePath, outputFilePath, inputFormat, choice.Value);
       ConsoleLogger.Info($"Converted {imageFile.GetRelativePath(inputFolder)} to {choice.Value.FormatString}");
       convertedFileCount++;
       var originalInputFilePath = imageFile.FilePath;
       var newInputFilePath = imageFile.FilePath.Replace(inputFolder, newInputFolderPath);
+      var inputFolderForFile = Path.GetDirectoryName(newInputFilePath);
+      if (!string.IsNullOrEmpty(inputFolderForFile) && !Directory.Exists(inputFolderForFile)) Directory.CreateDirectory(inputFolderForFile);
       File.Move(originalInputFilePath,newInputFilePath,true);
     }
     catch (Exception ex) {
