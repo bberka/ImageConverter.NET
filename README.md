@@ -20,13 +20,20 @@ Usage: ImageConverter.NET convert-image
 
 Converts an images in given input directory to the specified format.
 
-Options:
+**Options:**
+
 --input <String>                         Path to the input directory. (Required)
+
 --output <String>                        Path to the output directory. (Required)
+
 --convert-to <String>                    Target format (e.g., 'png'). (Required)
+
 --include-subdirectories=<true|false>    Include subdirectories. (Default: True)
---overwrite                              Overwrite existing files. (Default: False)
+
+--overwrite=<true|false>                             Overwrite existing files. (Default: False)
+
 --new-width <Int32>                      Target width.
+
 --new-height <Int32>                     Target height.
   
 
@@ -47,11 +54,16 @@ Usage: ImageConverter.NET resize-image
 
 Resizes an image in the given input directory to the specified dimensions.
 
-Options:
+**Options:**
+
 --input <String>     Path to the input directory. (Required)
+
 --output <String>    Path to the output directory. (Required)
+
 --width <Int32>      Target width. (Required)
+
 --height <Int32>     Target height. (Required)
+
 -h, --help           Show help message
 
 Usage
