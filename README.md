@@ -7,11 +7,8 @@ Usage: ImageConverter.NET.exe [command-name]
 - [convert-image](#convert-image): Converts an images in given input directory tothe specified format.
 - [resize-image](#resize-image): Resizes an image in the given input directory tothe specified dimensions.
 - [list-formats](#list-formats): Lists supported image formats.
-
-Options:
-  -h, --help    Show help message
-  --version     Show version
-
+- help: Show help message
+- version: Show version
 
 ## Usage
 
@@ -41,12 +38,12 @@ Converts an images in given input directory to the specified format.
 
 **Minimal usage**
 ```batch
-..\ImageConverter.NET.exe convert-image --input "input" --output "output" --convert-to "dds"
+ImageConverter.NET.exe convert-image --input "input" --output "output" --convert-to "dds"
 ```
 
 **Extended usage**
 ```batch
-..\ImageConverter.NET.exe convert-image --input "input" --output "output" --convert-to "dds" --new-width 44 --new-height 44 --include-subdirectories --overwrite
+ImageConverter.NET.exe convert-image --input "input" --output "output" --convert-to "dds" --new-width 44 --new-height 44 --include-subdirectories --overwrite
 ```
 
 ### Resize Image
@@ -64,11 +61,22 @@ Resizes an image in the given input directory to the specified dimensions.
 
 --height <Int32>     Target height. (Required)
 
+--include-subdirectories=<true|false>    Include subdirectories. (Default: True)
+
+--overwrite=<true|false>                             Overwrite existing files. (Default: False)
+
 -h, --help           Show help message
 
 **Usage**
+
+**Minimal usage**
 ```batch
-..\ImageConverter.NET.exe resize-image --input "input" --output "output" --width 44 --height 56
+ImageConverter.NET.exe resize-image --input "input" --output "output" --width 44 --height 56
+```
+
+**Extended usage**
+```batch
+ImageConverter.NET.exe resize-image --input "input" --output "output" --width 44 --height 56 --include-subdirectories --overwrite
 ```
 
 ### List Formats
