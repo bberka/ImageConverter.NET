@@ -53,9 +53,13 @@ public class CoconaImageConverterApp
     [Option("width", Description = "Target width.")]
     int width,
     [Option("height", Description = "Target height.")]
-    int height) {
+    int height,
+    [Option("include-subdirectories", Description = "Include subdirectories.")]
+    bool includeSubdirectories = true,
+    [Option("overwrite", Description = "Overwrite existing files.")]
+    bool overwrite = false) {
     try {
-      ImageConversionManager.ResizeFromDirectory(input, output, width, height);
+      ImageConversionManager.ResizeFromDirectory(input, output, width, height, includeSubdirectories, overwrite);
     }
     catch (Exception ex) {
       ConsoleLogger.Error($"Error resizing image: {ex.Message}");

@@ -103,7 +103,7 @@ public static class ImageConversionManager
     ConsoleLogger.Info($"Converted {convertedFileCount} number of files");
   }
 
-  public static void ResizeFromDirectory(string input, string output, int width, int height) {
+  public static void ResizeFromDirectory(string input, string output, int width, int height, bool includeSubdirectories = true, bool overwrite = false) {
     input = string.IsNullOrEmpty(input)
               ? Util.GetInputFolderDefault()
               : input;
@@ -114,13 +114,20 @@ public static class ImageConversionManager
       throw new Exception("Input directory does not exists");
     if (!Directory.Exists(output))
       Directory.CreateDirectory(output);
-    var imageFiles = Util.GetSupportedFormatImageFiles(input);
+    var imageFiles = Util.GetSupportedFormatImageFiles(input, includeSubdirectories);
     if (imageFiles.Count == 0) throw new Exception("No files found in input directory");
     ConsoleLogger.Info($"{imageFiles.Count} files found in input directory");
     var resizedFileCount = 0;
     foreach (var imageFile in imageFiles)
       try {
         var outputFilePath = Util.MakeOutputFilePath(imageFile, input, output, Util.GetFileFormat(imageFile));
+        if (File.Exists(outputFilePath)) {
+          if (!overwrite) {
+            ConsoleLogger.Error($"Output file already exists: {Util.MakeRelativePath(imageFile, input)}");
+            continue;
+          }
+          File.Delete(outputFilePath);
+        }
         var outFolder = Path.GetDirectoryName(outputFilePath);
         if (!string.IsNullOrEmpty(outFolder) && !Directory.Exists(outFolder)) Directory.CreateDirectory(outFolder);
         using var image = new MagickImage(imageFile);
