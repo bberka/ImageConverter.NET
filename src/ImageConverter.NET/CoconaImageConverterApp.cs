@@ -24,12 +24,7 @@ public class CoconaImageConverterApp
     [Option("new-height", Description = "Target height.")]
     int? newHeight = null) {
     try {
-      if (newWidth.HasValue && newHeight.HasValue && (newWidth.Value <= 0 || newHeight.Value <= 0))
-        throw new Exception("Invalid dimensions");
-      if (newWidth.HasValue && !newHeight.HasValue)
-        throw new Exception("Height must be specified");
-      if (newHeight.HasValue && !newWidth.HasValue)
-        throw new Exception("Width must be specified");
+  
       ImageConversionManager.ConvertFromDirectory(input,
                                                   output,
                                                   convertTo,

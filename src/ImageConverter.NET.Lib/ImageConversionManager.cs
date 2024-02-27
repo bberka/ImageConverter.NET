@@ -12,6 +12,12 @@ public static class ImageConversionManager
                              bool overwrite = false,
                              int? newWidth = null,
                              int? newHeight = null) {
+    if (newWidth.HasValue && newHeight.HasValue && (newWidth.Value <= 0 || newHeight.Value <= 0))
+      throw new Exception("Invalid dimensions");
+    if (newWidth.HasValue && !newHeight.HasValue)
+      throw new Exception("Height must be specified");
+    if (newHeight.HasValue && !newWidth.HasValue)
+      throw new Exception("Width must be specified");
     if (!File.Exists(imageFilePath))
       throw new Exception("Input file does not exists");
     if (File.Exists(outputFilePath)) {
