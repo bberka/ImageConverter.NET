@@ -1,1 +1,1 @@
-ImageConverter.NET.exe convert-image --input "input" --output "output" --convert-to "png" --include-subdirectories
+..\ImageConverter.NET.exe convert-image --input "input" --output "output" --convert-to "png" --include-subdirectories
