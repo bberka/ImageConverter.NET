@@ -39,12 +39,12 @@ Converts an images in given input directory to the specified format.
 
 #### Batch example
 
-Minimal usage
+**Minimal usage**
 ```batch
 ..\ImageConverter.NET.exe convert-image --input "input" --output "output" --convert-to "dds"
 ```
 
-Extended usage
+**Extended usage**
 ```batch
 ..\ImageConverter.NET.exe convert-image --input "input" --output "output" --convert-to "dds" --new-width 44 --new-height 44 --include-subdirectories --overwrite
 ```
@@ -66,7 +66,7 @@ Resizes an image in the given input directory to the specified dimensions.
 
 -h, --help           Show help message
 
-Usage
+**Usage**
 ```batch
 ..\ImageConverter.NET.exe resize-image --input "input" --output "output" --width 44 --height 56
 ```
