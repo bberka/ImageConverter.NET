@@ -1,13 +1,18 @@
 ﻿using Cocona;
 using ImageConverter.NET.Lib;
-using ImageConverter.NET.Lib.Logger;
+using Microsoft.Extensions.Logging;
 
 namespace ImageConverter.NET;
 
-public class CoconaImageConverterApp
+public class CoconaImageConverterApp(
+    ILogger<CoconaImageConverterApp> logger,
+    IImageConverterNet imageConverterNet
+)
 {
-    [Command("convert-image",
-        Description = "Converts an images in given input directory to the specified format.")]
+    [Command(
+        "convert-image",
+        Description = "Converts images in the given input directory to the specified format."
+    )]
     public void ConvertImage(
         [Option("input", Description = "Path to the input directory.")]
         string input,
@@ -22,26 +27,40 @@ public class CoconaImageConverterApp
         [Option("new-width", Description = "Target width.")]
         int? newWidth = null,
         [Option("new-height", Description = "Target height.")]
-        int? newHeight = null)
+        int? newHeight = null
+    )
     {
         try
         {
-            ImageConversionManager.ConvertFromDirectory(input,
+            logger.LogInformation(
+                "Converting images from {Input} to {Output} as {Format}",
+                input,
+                output,
+                convertTo
+            );
+
+            imageConverterNet.ConvertFromDirectory(
+                input,
                 output,
                 convertTo,
                 includeSubdirectories,
                 overwrite,
                 newWidth,
-                newHeight);
+                newHeight
+            );
+
+            logger.LogInformation("Conversion completed successfully");
         }
         catch (Exception ex)
         {
-            ConsoleLogger.Error($"Error converting image: {ex.Message}");
+            logger.LogError(ex, "Error converting images");
         }
     }
 
-    [Command("resize-image",
-        Description = "Resizes an image in the given input directory to the specified dimensions.")]
+    [Command(
+        "resize-image",
+        Description = "Resizes images in the given input directory to the specified dimensions."
+    )]
     public void ResizeImage(
         [Option("input", Description = "Path to the input directory.")]
         string input,
@@ -54,24 +73,49 @@ public class CoconaImageConverterApp
         [Option("include-subdirectories", Description = "Include subdirectories.")]
         bool includeSubdirectories = true,
         [Option("overwrite", Description = "Overwrite existing files.")]
-        bool overwrite = false)
+        bool overwrite = false
+    )
     {
         try
         {
-            ImageConversionManager.ResizeFromDirectory(input, output, width, height, includeSubdirectories, overwrite);
+            logger.LogInformation(
+                "Resizing images from {Input} to {Output} with size {Width}x{Height}",
+                input,
+                output,
+                width,
+                height
+            );
+
+            imageConverterNet.ResizeFromDirectory(
+                input,
+                output,
+                width,
+                height,
+                includeSubdirectories,
+                overwrite
+            );
+
+            logger.LogInformation("Resize completed successfully");
         }
         catch (Exception ex)
         {
-            ConsoleLogger.Error($"Error resizing image: {ex.Message}");
+            logger.LogError(ex, "Error resizing images");
         }
     }
 
-    [Command("list-formats",
-        Description = "Lists supported image formats.")]
+    [Command("list-formats", Description = "Lists supported image formats.")]
     public void ListFormats()
     {
-        var formats = ImageConversionManager.GetSupportedFormats();
-        ConsoleLogger.Info("Supported formats:");
-        foreach (var format in formats) ConsoleLogger.Info(format);
+        try
+        {
+            var formats = imageConverterNet.GetSupportedFormats();
+            logger.LogInformation("Supported formats:");
+            foreach (var format in formats)
+                logger.LogInformation("- {Format}", format);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error listing formats");
+        }
     }
 }
