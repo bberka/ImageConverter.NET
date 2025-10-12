@@ -4,47 +4,26 @@ namespace ImageConverter.NET.Lib;
 
 public interface IImageConverterNet
 {
-    void Convert(
-        string imageFilePath,
-        string outputFilePath,
-        MagickFormat outputFormat,
-        bool overwrite = false,
-        int? newWidth = null,
-        int? newHeight = null);
-
-    void Convert(
-        string imageFilePath,
-        string outputFilePath,
-        string outputFormat,
-        bool overwrite = false,
-        int? newWidth = null,
-        int? newHeight = null);
-
-    void ConvertFromDirectory(
+    ImageConversionResult ConvertFromDirectory(
         string input,
         string output,
         string outFormat,
         bool includeSubdirectories = true,
         bool overwrite = false,
         int? newWidth = null,
-        int? newHeight = null);
+        int? newHeight = null,
+        int? maxParallelism = null,
+        string? summaryPath = null);
 
-    void ConvertFromDirectory(
-        string input,
-        string output,
-        MagickFormat outFormat,
-        bool includeSubdirectories = true,
-        bool overwrite = false,
-        int? newWidth = null,
-        int? newHeight = null);
-
-    void ResizeFromDirectory(
+    ImageConversionResult ResizeFromDirectory(
         string input,
         string output,
         int width,
         int height,
         bool includeSubdirectories = true,
-        bool overwrite = false);
+        bool overwrite = false,
+        int? maxParallelism = null,
+        string? summaryPath = null);
 
     IEnumerable<string> GetSupportedFormats();
 }

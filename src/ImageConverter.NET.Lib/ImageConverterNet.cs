@@ -1,4 +1,6 @@
-﻿using System.Globalization;
+﻿using System.Diagnostics;
+using System.Globalization;
+using System.Text.Json;
 using ImageMagick;
 using Microsoft.Extensions.Logging;
 
@@ -6,152 +8,59 @@ namespace ImageConverter.NET.Lib;
 
 public class ImageConverterNet(ILogger<ImageConverterNet> logger) : IImageConverterNet
 {
-    public void Convert(
-        string imageFilePath,
-        string outputFilePath,
-        MagickFormat outputFormat,
-        bool overwrite = false,
-        int? newWidth = null,
-        int? newHeight = null)
-    {
-        ValidateDimensions(newWidth, newHeight);
-
-        if (!File.Exists(imageFilePath))
-            throw new Exception("Input file does not exist");
-
-        if (File.Exists(outputFilePath))
-        {
-            if (!overwrite)
-                throw new Exception("Output file already exists");
-            File.Delete(outputFilePath);
-        }
-
-        var inputFormat =
-            Util.GetFormatEnum(Path.GetExtension(imageFilePath).Trim('.'));
-
-        using var image = new MagickImage(
-            imageFilePath,
-            new MagickReadSettings { Format = inputFormat });
-
-        if (newWidth.HasValue && newHeight.HasValue)
-            image.Resize(newWidth.Value, newHeight.Value);
-
-        image.Write(outputFilePath, outputFormat);
-    }
-
-    public void Convert(
-        string imageFilePath,
-        string outputFilePath,
-        string outputFormat,
-        bool overwrite = false,
-        int? newWidth = null,
-        int? newHeight = null)
-    {
-        Convert(
-            imageFilePath,
-            outputFilePath,
-            Util.GetFormatEnum(outputFormat),
-            overwrite,
-            newWidth,
-            newHeight);
-    }
-
-    public void ConvertFromDirectory(
+    public ImageConversionResult ConvertFromDirectory(
         string input,
         string output,
         string outFormat,
         bool includeSubdirectories = true,
         bool overwrite = false,
         int? newWidth = null,
-        int? newHeight = null)
+        int? newHeight = null,
+        int? maxParallelism = null,
+        string? summaryPath = null)
     {
-        ConvertFromDirectory(
+        var format = Util.GetFormatEnum(outFormat);
+        return ConvertInternal(
             input,
             output,
-            Util.GetFormatEnum(outFormat),
+            i => Util.MakeOutputFilePath(i, input, output, format),
+            f => ConvertSingle(f.input, f.output, format, overwrite, newWidth, newHeight),
             includeSubdirectories,
             overwrite,
-            newWidth,
-            newHeight);
+            maxParallelism,
+            summaryPath);
     }
 
-    public void ConvertFromDirectory(
-        string input,
-        string output,
-        MagickFormat outFormat,
-        bool includeSubdirectories = true,
-        bool overwrite = false,
-        int? newWidth = null,
-        int? newHeight = null)
-    {
-        input = string.IsNullOrEmpty(input)
-            ? Util.GetInputFolderDefault()
-            : input;
-        output = string.IsNullOrEmpty(output)
-            ? Util.GetOutputFolderDefault()
-            : output;
-
-        if (!Directory.Exists(input))
-            throw new Exception("Input directory does not exist");
-
-        if (!Directory.Exists(output))
-            Directory.CreateDirectory(output);
-
-        var imageFiles = Util.GetSupportedFormatImageFiles(input, includeSubdirectories);
-        if (imageFiles.Count == 0)
-            throw new Exception("No files found in input directory");
-
-        logger.LogInformation("{Count} files found in input directory", imageFiles.Count);
-
-        var convertedFileCount = 0;
-        Parallel.ForEach(imageFiles, imageFile =>
-        {
-            try
-            {
-                var outputFilePath = Util.MakeOutputFilePath(
-                    imageFile,
-                    input,
-                    output,
-                    outFormat);
-
-                var outFolder = Path.GetDirectoryName(outputFilePath);
-                if (!string.IsNullOrEmpty(outFolder) && !Directory.Exists(outFolder))
-                    Directory.CreateDirectory(outFolder);
-
-                Convert(
-                    imageFile,
-                    outputFilePath,
-                    outFormat,
-                    overwrite,
-                    newWidth,
-                    newHeight);
-
-                logger.LogInformation(
-                    "Converted {File} to {Format}",
-                    Util.MakeRelativePath(imageFile, input),
-                    outFormat.ToString().ToLower(new CultureInfo("en-US")));
-
-                Interlocked.Increment(ref convertedFileCount);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(
-                    ex,
-                    "Error converting {File}",
-                    Util.MakeRelativePath(imageFile, input));
-            }
-        });
-
-        logger.LogInformation("Converted {Count} files", convertedFileCount);
-    }
-
-    public void ResizeFromDirectory(
+    public ImageConversionResult ResizeFromDirectory(
         string input,
         string output,
         int width,
         int height,
         bool includeSubdirectories = true,
-        bool overwrite = false)
+        bool overwrite = false,
+        int? maxParallelism = null,
+        string? summaryPath = null)
+    {
+        return ConvertInternal(
+            input,
+            output,
+            i => Util.MakeOutputFilePath(i, input, output, Util.GetFileFormat(i)),
+            f => ResizeSingle(f.input, f.output, width, height, overwrite),
+            includeSubdirectories,
+            overwrite,
+            maxParallelism,
+            summaryPath);
+    }
+
+    private ImageConversionResult ConvertInternal(
+        string input,
+        string output,
+        Func<string, string> outputPathFactory,
+        Action<(string input, string output)> processImage,
+        bool includeSubdirectories,
+        bool overwrite,
+        int? maxParallelism,
+        string? summaryPath)
     {
         input = string.IsNullOrEmpty(input)
             ? Util.GetInputFolderDefault()
@@ -161,85 +70,123 @@ public class ImageConverterNet(ILogger<ImageConverterNet> logger) : IImageConver
             : output;
 
         if (!Directory.Exists(input))
-            throw new Exception("Input directory does not exist");
+            throw new Exception("Input directory does not exist.");
 
         if (!Directory.Exists(output))
             Directory.CreateDirectory(output);
 
         var imageFiles = Util.GetSupportedFormatImageFiles(input, includeSubdirectories);
         if (imageFiles.Count == 0)
-            throw new Exception("No files found in input directory");
+            throw new Exception("No files found in input directory.");
 
-        logger.LogInformation("{Count} files found in input directory", imageFiles.Count);
+        logger.LogInformation("{Count} files found in {Input}", imageFiles.Count, input);
 
-        var resizedFileCount = 0;
-        Parallel.ForEach(imageFiles, imageFile =>
+        var result = new ImageConversionResult { TotalFiles = imageFiles.Count };
+        var sw = Stopwatch.StartNew();
+
+        var options = new ParallelOptions
+        {
+            MaxDegreeOfParallelism = maxParallelism ?? Environment.ProcessorCount
+        };
+
+        var success = 0;
+        var failed = 0;
+
+        Parallel.ForEach(imageFiles, options, imageFile =>
         {
             try
             {
-                var outputFilePath = Util.MakeOutputFilePath(
-                    imageFile,
-                    input,
-                    output,
-                    Util.GetFileFormat(imageFile));
-
-                if (File.Exists(outputFilePath))
-                {
-                    if (!overwrite)
-                    {
-                        logger.LogWarning(
-                            "Output file already exists: {File}",
-                            Util.MakeRelativePath(imageFile, input));
-                        return;
-                    }
-
-                    File.Delete(outputFilePath);
-                }
-
-                var outFolder = Path.GetDirectoryName(outputFilePath);
+                var outFile = outputPathFactory(imageFile);
+                var outFolder = Path.GetDirectoryName(outFile);
                 if (!string.IsNullOrEmpty(outFolder) && !Directory.Exists(outFolder))
                     Directory.CreateDirectory(outFolder);
 
-                using var image = new MagickImage(imageFile);
-                image.Resize(width, height);
-                image.Write(outputFilePath);
-
-                logger.LogInformation(
-                    "Resized {File} to {Width}x{Height}",
-                    Util.MakeRelativePath(imageFile, input),
-                    width,
-                    height);
-
-                Interlocked.Increment(ref resizedFileCount);
+                processImage((imageFile, outFile));
+                logger.LogDebug("Processed {File}", Util.MakeRelativePath(imageFile, input));
+                Interlocked.Increment(ref success);
             }
             catch (Exception ex)
             {
-                logger.LogError(
-                    ex,
-                    "Error resizing {File}",
-                    Util.MakeRelativePath(imageFile, input));
+                Interlocked.Increment(ref failed);
+                lock (result.Errors)
+                {
+                    result.Errors.Add(new ImageProcessError
+                    {
+                        File = Util.MakeRelativePath(imageFile, input),
+                        Message = ex.Message
+                    });
+                }
+
+                logger.LogError(ex, "Error processing {File}", Util.MakeRelativePath(imageFile, input));
             }
         });
 
-        logger.LogInformation("Resized {Count} files", resizedFileCount);
+        sw.Stop();
+        result.ElapsedSeconds = sw.Elapsed.TotalSeconds;
+        result.Succeeded = success;
+        result.Failed = failed;
+
+        logger.LogInformation("Completed: {Summary}", result);
+
+        if (!string.IsNullOrEmpty(summaryPath))
+            WriteSummaryFile(summaryPath, result);
+
+        return result;
     }
 
-    public IEnumerable<string> GetSupportedFormats()
+    private static void WriteSummaryFile(string path, ImageConversionResult result)
     {
-        return Enum.GetNames<MagickFormat>()
-            .Select(x => x.ToLower(new CultureInfo("en-US")));
+        var json = JsonSerializer.Serialize(result, new JsonSerializerOptions
+        {
+            WriteIndented = true
+        });
+
+        var dir = Path.GetDirectoryName(path);
+        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+            Directory.CreateDirectory(dir);
+        File.WriteAllText(path, json);
     }
 
-    private static void ValidateDimensions(int? newWidth, int? newHeight)
+    private static void ConvertSingle(
+        string inputFile,
+        string outputFile,
+        MagickFormat outputFormat,
+        bool overwrite,
+        int? newWidth,
+        int? newHeight)
     {
-        if (newWidth.HasValue && newHeight.HasValue &&
-            (newWidth.Value <= 0 || newHeight.Value <= 0))
-            throw new Exception("Invalid dimensions");
+        if (File.Exists(outputFile))
+        {
+            if (!overwrite)
+                throw new IOException("Output file exists.");
+            File.Delete(outputFile);
+        }
 
-        if (newWidth.HasValue && !newHeight.HasValue)
-            throw new Exception("Height must be specified when width is provided");
-
-        if (newHeight.HasValue && !newWidth.HasValue)
-            throw new Exception("Width must be specified when height is provided");
+        using var image = new MagickImage(inputFile);
+        if (newWidth.HasValue && newHeight.HasValue)
+            image.Resize(newWidth.Value, newHeight.Value);
+        image.Write(outputFile, outputFormat);
     }
+
+    private static void ResizeSingle(
+        string inputFile,
+        string outputFile,
+        int width,
+        int height,
+        bool overwrite)
+    {
+        if (File.Exists(outputFile))
+        {
+            if (!overwrite)
+                throw new IOException("Output file exists.");
+            File.Delete(outputFile);
+        }
+
+        using var image = new MagickImage(inputFile);
+        image.Resize(width, height);
+        image.Write(outputFile);
+    }
+
+    public IEnumerable<string> GetSupportedFormats() =>
+        Enum.GetNames<MagickFormat>().Select(x => x.ToLower(new CultureInfo("en-US")));
 }
