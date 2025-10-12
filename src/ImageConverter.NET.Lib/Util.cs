@@ -5,61 +5,69 @@ namespace ImageConverter.NET.Lib;
 
 internal static class Util
 {
-    public static string GetInputFolderDefault()
+    private static string EnsureFolder(string folderName)
     {
-        var inputFolder = Path.Combine(Directory.GetCurrentDirectory(), "input");
-        if (!Directory.Exists(inputFolder))
-            Directory.CreateDirectory(inputFolder);
-        return inputFolder;
+        var path = Path.Combine(Directory.GetCurrentDirectory(), folderName);
+        if (!Directory.Exists(path))
+            Directory.CreateDirectory(path);
+        return path;
     }
 
-    public static string GetOutputFolderDefault()
-    {
-        var outputFolder = Path.Combine(Directory.GetCurrentDirectory(), "output");
-        if (!Directory.Exists(outputFolder))
-            Directory.CreateDirectory(outputFolder);
-        return outputFolder;
-    }
+    public static string GetInputFolderDefault() => EnsureFolder("input");
+    public static string GetOutputFolderDefault() => EnsureFolder("output");
 
+    // --- Format parsing ---
     public static MagickFormat GetFormatEnum(string format)
     {
-        return Enum.Parse<MagickFormat>(format, true);
+        if (string.IsNullOrWhiteSpace(format))
+            throw new ArgumentException("Format string cannot be null or empty.", nameof(format));
+
+        var cleaned = format.Trim().TrimStart('.');
+        return Enum.Parse<MagickFormat>(cleaned, ignoreCase: true);
     }
 
-
-    public static string MakeOutputFilePath(string filePath, string inputFolder, string outputFolder, MagickFormat outputFormat)
+    public static MagickFormat GetFileFormat(string filePath)
     {
-        var outputFilePath = filePath
-            .Replace("." + Path.GetExtension(filePath).Trim('.'), "." + outputFormat.ToString().ToLower(new CultureInfo("en-US")))
-            .Replace(inputFolder, outputFolder);
-        return outputFilePath;
+        var ext = Path.GetExtension(filePath);
+        if (string.IsNullOrWhiteSpace(ext))
+            throw new ArgumentException("File has no extension.", nameof(filePath));
+
+        var cleaned = ext.Trim('.').Trim();
+        return Enum.Parse<MagickFormat>(cleaned, ignoreCase: true);
+    }
+
+    // --- Path builders ---
+    public static string MakeOutputFilePath(
+        string inputFilePath, string inputFolder, string outputFolder, MagickFormat outputFormat)
+    {
+        var fileName = Path.GetFileNameWithoutExtension(inputFilePath);
+        var relPath = Path.GetRelativePath(inputFolder, Path.GetDirectoryName(inputFilePath) ?? inputFolder);
+
+        var finalFolder = Path.Combine(outputFolder, relPath);
+        if (!Directory.Exists(finalFolder))
+            Directory.CreateDirectory(finalFolder);
+
+        var newFileName = $"{fileName}.{outputFormat.ToString().ToLower(CultureInfo.InvariantCulture)}";
+        return Path.Combine(finalFolder, newFileName);
     }
 
     public static string MakeRelativePath(string filePath, string inputFolder)
     {
-        var path = filePath.Replace(inputFolder, "");
-        if (path.StartsWith("\\") || path.StartsWith("/")) path = path[1..];
-        return path;
+        var relative = Path.GetRelativePath(inputFolder, filePath);
+        return relative.Replace('\\', '/');
     }
 
-    public static MagickFormat GetFileFormat(string input)
-    {
-        return Enum.Parse<MagickFormat>(Path.GetExtension(input).Trim('.'), true);
-    }
-
+    // --- Helpers ---
     public static bool IsSupportedFormat(string filePath)
     {
-        //is defined in enums and is supported by ImageMagick
-        return Enum.TryParse<MagickFormat>(Path.GetExtension(filePath).Trim('.'), true, out _);
+        var ext = Path.GetExtension(filePath).Trim('.').Trim();
+        return Enum.TryParse<MagickFormat>(ext, true, out _);
     }
 
     public static List<string> GetSupportedFormatImageFiles(string path, bool includeSubDirectories = true)
     {
-        if (includeSubDirectories)
-            return Directory.GetFiles(path, "*.*", SearchOption.AllDirectories)
-                .Where(IsSupportedFormat)
-                .ToList();
-        return Directory.GetFiles(path, "*.*", SearchOption.TopDirectoryOnly)
+        var option = includeSubDirectories ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+        return Directory.GetFiles(path, "*.*", option)
             .Where(IsSupportedFormat)
             .ToList();
     }
