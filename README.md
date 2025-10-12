@@ -58,14 +58,14 @@ Converts images in a folder to a specified format.
 **Options:**
 
 | Option                                  | Description                                          |
-| --------------------------------------- | ---------------------------------------------------- |
+|-----------------------------------------| ---------------------------------------------------- |
 | `--input <String>`                      | Path to the input directory. **(Required)**          |
 | `--output <String>`                     | Path to the output directory. **(Required)**         |
 | `--convert-to <String>`                 | Target format (e.g., png, jpg, webp). **(Required)** |
 | `--include-subdirectories=<true,false>` | Include subdirectories. _(Default: true)_            |
 | `--overwrite=<true,false>`              | Overwrite existing files. _(Default: false)_         |
-| `--new-width <Int32>`                   | Resize width (optional).                             |
-| `--new-height <Int32>`                  | Resize height (optional).                            |
+| `--new-width <UInt32>`                  | Resize width (optional).                             |
+| `--new-height <UInt32>`                 | Resize height (optional).                            |
 | `--max-parallelism <Int32>`             | Limit concurrent conversions.                        |
 | `--summary <Path>`                      | Export operation summary file.                       |
 | `--log-level <Level>`                   | Override global logging level.                       |
