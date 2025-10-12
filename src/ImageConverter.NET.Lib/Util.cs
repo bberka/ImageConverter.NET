@@ -44,7 +44,7 @@ internal static class Util
 
     public static MagickFormat GetFileFormat(string input)
     {
-        return Enum.Parse<MagickFormat>(Path.GetExtension(input).Trim('.'));
+        return Enum.Parse<MagickFormat>(Path.GetExtension(input).Trim('.'), true);
     }
 
     public static bool IsSupportedFormat(string filePath)
