@@ -46,7 +46,7 @@ builder.Services.AddScoped<IImageConverterNet, ImageConverterNet>();
 
 var app = builder.Build();
 
-app.AddCommands<CoconaImageConverterApp>();
+app.AddCommands<ImageConverterNetCli>();
 
 app.Run();
 

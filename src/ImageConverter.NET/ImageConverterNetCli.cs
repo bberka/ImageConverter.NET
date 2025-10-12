@@ -4,8 +4,8 @@ using Microsoft.Extensions.Logging;
 
 namespace ImageConverter.NET;
 
-public class CoconaImageConverterApp(
-    ILogger<CoconaImageConverterApp> logger,
+public class ImageConverterNetCli(
+    ILogger<ImageConverterNetCli> logger,
     IImageConverterNet imageConverterNet
 )
 {
@@ -27,7 +27,11 @@ public class CoconaImageConverterApp(
         [Option("new-width", Description = "Target width.")]
         int? newWidth = null,
         [Option("new-height", Description = "Target height.")]
-        int? newHeight = null
+        int? newHeight = null,
+        [Option("max-parallelism", Description = "Maximum number of parallel threads.")]
+        int? maxParallelism = null,
+        [Option("summary", Description = "Path to output summary JSON file.")]
+        string? summaryPath = null
     )
     {
         try
@@ -39,17 +43,21 @@ public class CoconaImageConverterApp(
                 convertTo
             );
 
-            imageConverterNet.ConvertFromDirectory(
+            var result = imageConverterNet.ConvertFromDirectory(
                 input,
                 output,
                 convertTo,
                 includeSubdirectories,
                 overwrite,
                 newWidth,
-                newHeight
+                newHeight,
+                maxParallelism,
+                summaryPath
             );
 
-            logger.LogInformation("Conversion completed successfully");
+            logger.LogInformation("Conversion completed: {Summary}", result.ToString());
+            if (summaryPath is not null)
+                logger.LogInformation("Summary exported to {Path}", summaryPath);
         }
         catch (Exception ex)
         {
@@ -73,7 +81,11 @@ public class CoconaImageConverterApp(
         [Option("include-subdirectories", Description = "Include subdirectories.")]
         bool includeSubdirectories = true,
         [Option("overwrite", Description = "Overwrite existing files.")]
-        bool overwrite = false
+        bool overwrite = false,
+        [Option("max-parallelism", Description = "Maximum number of parallel threads.")]
+        int? maxParallelism = null,
+        [Option("summary", Description = "Path to output summary JSON file.")]
+        string? summaryPath = null
     )
     {
         try
@@ -86,16 +98,20 @@ public class CoconaImageConverterApp(
                 height
             );
 
-            imageConverterNet.ResizeFromDirectory(
+            var result = imageConverterNet.ResizeFromDirectory(
                 input,
                 output,
                 width,
                 height,
                 includeSubdirectories,
-                overwrite
+                overwrite,
+                maxParallelism,
+                summaryPath
             );
 
-            logger.LogInformation("Resize completed successfully");
+            logger.LogInformation("Resize completed: {Summary}", result.ToString());
+            if (summaryPath is not null)
+                logger.LogInformation("Summary exported to {Path}", summaryPath);
         }
         catch (Exception ex)
         {
