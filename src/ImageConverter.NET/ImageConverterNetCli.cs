@@ -25,9 +25,9 @@ public class ImageConverterNetCli(
         [Option("overwrite", Description = "Overwrite existing files.")]
         bool overwrite = false,
         [Option("new-width", Description = "Target width.")]
-        int? newWidth = null,
+        uint? newWidth = null,
         [Option("new-height", Description = "Target height.")]
-        int? newHeight = null,
+        uint? newHeight = null,
         [Option("max-parallelism", Description = "Maximum number of parallel threads.")]
         int? maxParallelism = null,
         [Option("summary", Description = "Path to output summary JSON file.")]
@@ -75,9 +75,9 @@ public class ImageConverterNetCli(
         [Option("output", Description = "Path to the output directory.")]
         string output,
         [Option("width", Description = "Target width.")]
-        int width,
+        uint width,
         [Option("height", Description = "Target height.")]
-        int height,
+        uint height,
         [Option("include-subdirectories", Description = "Include subdirectories.")]
         bool includeSubdirectories = true,
         [Option("overwrite", Description = "Overwrite existing files.")]
