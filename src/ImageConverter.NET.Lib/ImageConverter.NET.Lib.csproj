@@ -1,14 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <Version>1.0.2</Version>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <Version>1.0.2</Version>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Magick.NET-Q16-x64" Version="13.5.0"/>
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Magick.NET-Q16-x64" Version="13.5.0"/>
+    </ItemGroup>
 
 </Project>
