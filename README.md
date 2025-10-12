@@ -1,104 +1,202 @@
 # ImageConverter.NET
-Simple .NET CLI App to convert images to new formats and resize images.
+
+A modern **.NET 9 CLI** tool for converting and resizing images using **Magick.NET**.  
+It’s designed for developers who need an automated, scriptable, and observable image processing utility.
+
+---
+
+## Overview
+
+**Key Features:**
+
+- Convert or resize images in bulk
+- Parallelized image processing for fast performance
+- Structured logging with **Serilog** (console + file support)
+- JSON export summaries for automation & testing
+- Built with **Cocona** for beautiful CLI UX
+- Powered by **Magick.NET** for format compatibility
+
+---
+
+## Global Options
+
+| Option                      | Description                                                                                                                    |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `--log-level <Level>`       | Sets the logging verbosity. _(Default: Information)_<br>Values: `Verbose`, `Debug`, `Information`, `Warning`, `Error`, `Fatal` |
+| `--file-log <Path>`         | Enables file logging. Rolls daily, 10 MB max per file.                                                                         |
+| `--max-parallelism <Int32>` | Limits image processing threads. _(Default: number of processors)_                                                             |
+| `--summary <Path>`          | Exports operation statistics in JSON format.                                                                                   |
+
+**Example:**
+
+```bash
+ImageConverter.NET.exe convert-image --input input --output output --convert-to webp --max-parallelism 4 --summary "reports/run.json" --file-log "logs/app.log"
+```
+
+---
 
 ## Commands
-Usage: ImageConverter.NET.exe [command-name]
 
-- [convert-image](#convert-image): Converts an images in given input directory tothe specified format.
-- [resize-image](#resize-image): Resizes an image in the given input directory tothe specified dimensions.
-- [list-formats](#list-formats): Lists supported image formats.
-- help: Show help message
-- version: Show version
+| Command                           | Description                                       |
+| --------------------------------- | ------------------------------------------------- |
+| [`convert-image`](#convert-image) | Converts images in a directory to another format. |
+| [`resize-image`](#resize-image)   | Resizes images across a directory.                |
+| [`list-formats`](#list-formats)   | Lists supported Magick.NET formats.               |
+| `help`                            | Displays help information.                        |
+| `version`                         | Displays version information.                     |
 
-## Usage
+---
 
-### Convert Image
-Usage: ImageConverter.NET convert-image
+## Convert Image
 
-Converts an images in given input directory to the specified format.
+```
+Usage: ImageConverter.NET.exe convert-image [options]
+```
+
+Converts images in a folder to a specified format.
 
 **Options:**
 
---input <String>                         Path to the input directory. (Required)
+| Option                                  | Description                                          |
+| --------------------------------------- | ---------------------------------------------------- |
+| `--input <String>`                      | Path to the input directory. **(Required)**          |
+| `--output <String>`                     | Path to the output directory. **(Required)**         |
+| `--convert-to <String>`                 | Target format (e.g., png, jpg, webp). **(Required)** |
+| `--include-subdirectories=<true,false>` | Include subdirectories. _(Default: true)_            |
+| `--overwrite=<true,false>`              | Overwrite existing files. _(Default: false)_         |
+| `--new-width <Int32>`                   | Resize width (optional).                             |
+| `--new-height <Int32>`                  | Resize height (optional).                            |
+| `--max-parallelism <Int32>`             | Limit concurrent conversions.                        |
+| `--summary <Path>`                      | Export operation summary file.                       |
+| `--log-level <Level>`                   | Override global logging level.                       |
+| `--file-log <Path>`                     | Enable file logging.                                 |
 
---output <String>                        Path to the output directory. (Required)
+### Convert Examples
 
---convert-to <String>                    Target format (e.g., 'png'). (Required)
+Minimal:
 
---include-subdirectories=<true|false>    Include subdirectories. (Default: True)
-
---overwrite=<true|false>                             Overwrite existing files. (Default: False)
-
---new-width <Int32>                      Target width.
-
---new-height <Int32>                     Target height.
-  
-
-#### Batch example
-
-**Minimal usage**
-```batch
-ImageConverter.NET.exe convert-image --input "input" --output "output" --convert-to "dds"
+```bash
+ImageConverter.NET.exe convert-image --input in --output out --convert-to png
 ```
 
-**Extended usage**
-```batch
-ImageConverter.NET.exe convert-image --input "input" --output "output" --convert-to "dds" --new-width 44 --new-height 44 --include-subdirectories --overwrite
+Advanced:
+
+```bash
+ImageConverter.NET.exe convert-image --input in --output out --convert-to jpg --new-width 128 --new-height 128 --overwrite --max-parallelism 4 --summary "reports/convert-summary.json" --file-log "logs/conversion.log"
 ```
 
-### Resize Image
-Usage: ImageConverter.NET resize-image
+---
 
-Resizes an image in the given input directory to the specified dimensions.
+## Resize Image
+
+```
+Usage: ImageConverter.NET.exe resize-image [options]
+```
+
+Resizes images to the given dimensions.
 
 **Options:**
 
---input <String>     Path to the input directory. (Required)
+| Option                                  | Description                                  |
+| --------------------------------------- | -------------------------------------------- |
+| `--input <String>`                      | Input directory. **(Required)**              |
+| `--output <String>`                     | Output directory. **(Required)**             |
+| `--width <Int32>`                       | Target width. **(Required)**                 |
+| `--height <Int32>`                      | Target height. **(Required)**                |
+| `--include-subdirectories=<true,false>` | Include subfolders. _(Default: true)_        |
+| `--overwrite=<true,false>`              | Overwrite existing files. _(Default: false)_ |
+| `--max-parallelism <Int32>`             | Max threads for processing.                  |
+| `--summary <Path>`                      | Export run summary JSON.                     |
+| `--log-level <Level>`                   | Adjust verbosity.                            |
+| `--file-log <Path>`                     | Record logs to file.                         |
 
---output <String>    Path to the output directory. (Required)
+### Resize Examples
 
---width <Int32>      Target width. (Required)
-
---height <Int32>     Target height. (Required)
-
---include-subdirectories=<true|false>    Include subdirectories. (Default: True)
-
---overwrite=<true|false>                             Overwrite existing files. (Default: False)
-
--h, --help           Show help message
-
-**Usage**
-
-**Minimal usage**
-```batch
-ImageConverter.NET.exe resize-image --input "input" --output "output" --width 44 --height 56
+```bash
+ImageConverter.NET.exe resize-image --input in --output out --width 1024 --height 768 --include-subdirectories --summary "reports/resize-summary.json"
 ```
 
-**Extended usage**
-```batch
-ImageConverter.NET.exe resize-image --input "input" --output "output" --width 44 --height 56 --include-subdirectories --overwrite
+---
+
+## List Formats
+
+Lists all formats supported by **Magick.NET**.
+
+```bash
+ImageConverter.NET.exe list-formats
 ```
 
-### List Formats
-Lists supported formats by Magick library to console you can also find supported formats [here](doc/formats.md)
+or with detailed logging:
 
-## Things to know
-- When input and output directory inputs are not valid app will use input directory and output directory in running directory
-- App will accept any formatting as long as it is supported by Magick
+```bash
+ImageConverter.NET.exe list-formats --log-level Debug
+```
 
+A static list is also available at [doc/formats.md](doc/formats.md).
 
-## [Supported Formats](doc/formats.md)
+---
+
+## Summary Export Example
+
+When using `--summary reports/run.json`, a file like this is created:
+
+```json
+{
+  "TotalFiles": 96,
+  "Succeeded": 94,
+  "Failed": 2,
+  "ElapsedSeconds": 3.42,
+  "Errors": [
+    { "File": "broken.bmp", "Message": "Unsupported format" },
+    { "File": "corrupt.jpg", "Message": "Invalid file header" }
+  ]
+}
+```
+
+Perfect for CI/CD and test verification.
+
+---
+
+## Notes
+
+- Default parallelism = number of logical CPU cores.
+- Operations are non‑blocking and run in parallel with safe exception handling.
+- Invalid paths cause automatic fallback to local `input` and `output` directories.
+- The application supports all **Magick.NET** file formats.
+
+---
+
+## Logging
+
+| Target                    | Description                                          |
+| ------------------------- | ---------------------------------------------------- |
+| **Console**               | Always active. Color‑coded output.                   |
+| **File (`--file-log`)**   | Optional. Daily rolling files (10 MB max).           |
+| **Summary (`--summary`)** | Optional. JSON operation results for analysis/tests. |
+
+Default log level: `Information`
+
+---
 
 ## Error Handling
-Error handling is very minimal and logging only to console.
 
-App will not exit till user press a key so you can see errors in console.
+- Errors during processing are logged but **do not stop execution**.
+- Full context is preserved in exported JSON summaries.
+- Failed files are listed explicitly with messages.
 
+---
 
 ## Disclaimer
-This project uses Magick.NET meaning anyone who wish to use it must comply with their terms of service.
 
-I the owner of this project can not be hold responsible
+This software uses **Magick.NET**.  
+You must comply with **Magick.NET’s** licenses and usage terms.  
+The developer of ImageConverter.NET is not responsible for third‑party license violations.
 
-## Reference
-This project uses [Magick.NET](https://github.com/dlemstra/Magick.NET) as a reference to read and write image formats
+---
+
+## References
+
+- [.NET 9](https://dotnet.microsoft.com/)
+- [Cocona](https://github.com/mayuki/Cocona)
+- [Serilog](https://serilog.net/)
+- [Magick.NET](https://github.com/dlemstra/Magick.NET)
