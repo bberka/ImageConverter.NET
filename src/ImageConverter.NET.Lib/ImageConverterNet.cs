@@ -8,57 +8,76 @@ namespace ImageConverter.NET.Lib;
 
 public class ImageConverterNet(ILogger<ImageConverterNet> logger) : IImageConverterNet
 {
-    public ImageConversionResult ConvertFromDirectory(
-        string input,
-        string output,
-        string outFormat,
-        bool includeSubdirectories = true,
+    // === Single-file convert ===
+    public void Convert(
+        string inputFilePath,
+        string outputFilePath,
+        string outputFormat,
         bool overwrite = false,
-        int? newWidth = null,
-        int? newHeight = null,
-        int? maxParallelism = null,
-        string? summaryPath = null)
+        uint? newWidth = null,
+        uint? newHeight = null)
+    {
+        if (!File.Exists(inputFilePath))
+            throw new FileNotFoundException("Input file does not exist", inputFilePath);
+
+        var format = Util.GetFormatEnum(outputFormat);
+        DoConvert(inputFilePath, outputFilePath, format, overwrite, newWidth, newHeight);
+
+        logger.LogInformation(
+            "Converted {File} to format {Format}",
+            Path.GetFileName(inputFilePath),
+            outputFormat);
+    }
+
+    // === Single-file resize ===
+    public void Resize(string inputFilePath, string outputFilePath,
+        uint width, uint height, bool overwrite = false)
+    {
+        if (!File.Exists(inputFilePath))
+            throw new FileNotFoundException("Input file does not exist", inputFilePath);
+
+        DoResize(inputFilePath, outputFilePath, width, height, overwrite);
+        logger.LogInformation(
+            "Resized {File} to {Width}x{Height}",
+            Path.GetFileName(inputFilePath), width, height);
+    }
+
+    // === Directory convert ===
+    public ImageConversionResult ConvertFromDirectory(
+        string input, string output, string outFormat,
+        bool includeSubdirectories = true, bool overwrite = false,
+        uint? newWidth = null, uint? newHeight = null,
+        int? maxParallelism = null, string? summaryPath = null)
     {
         var format = Util.GetFormatEnum(outFormat);
-        return ConvertInternal(
-            input,
-            output,
+
+        return ProcessDirectory(
+            input, output,
             i => Util.MakeOutputFilePath(i, input, output, format),
-            f => ConvertSingle(f.input, f.output, format, overwrite, newWidth, newHeight),
-            includeSubdirectories,
-            overwrite,
-            maxParallelism,
-            summaryPath);
+            f => DoConvert(f.input, f.output, format, overwrite, newWidth, newHeight),
+            includeSubdirectories, maxParallelism, summaryPath);
     }
 
+    // === Directory resize ===
     public ImageConversionResult ResizeFromDirectory(
-        string input,
-        string output,
-        int width,
-        int height,
-        bool includeSubdirectories = true,
-        bool overwrite = false,
-        int? maxParallelism = null,
-        string? summaryPath = null)
+        string input, string output,
+        uint width, uint height,
+        bool includeSubdirectories = true, bool overwrite = false,
+        int? maxParallelism = null, string? summaryPath = null)
     {
-        return ConvertInternal(
-            input,
-            output,
+        return ProcessDirectory(
+            input, output,
             i => Util.MakeOutputFilePath(i, input, output, Util.GetFileFormat(i)),
-            f => ResizeSingle(f.input, f.output, width, height, overwrite),
-            includeSubdirectories,
-            overwrite,
-            maxParallelism,
-            summaryPath);
+            f => DoResize(f.input, f.output, width, height, overwrite),
+            includeSubdirectories, maxParallelism, summaryPath);
     }
 
-    private ImageConversionResult ConvertInternal(
-        string input,
-        string output,
-        Func<string, string> outputPathFactory,
-        Action<(string input, string output)> processImage,
+    // === Internal folder processor (shared) ===
+    private ImageConversionResult ProcessDirectory(
+        string input, string output,
+        Func<string, string> outPathFactory,
+        Action<(string input, string output)> action,
         bool includeSubdirectories,
-        bool overwrite,
         int? maxParallelism,
         string? summaryPath)
     {
@@ -70,54 +89,53 @@ public class ImageConverterNet(ILogger<ImageConverterNet> logger) : IImageConver
             : output;
 
         if (!Directory.Exists(input))
-            throw new Exception("Input directory does not exist.");
-
+            throw new DirectoryNotFoundException("Input directory does not exist.");
         if (!Directory.Exists(output))
             Directory.CreateDirectory(output);
 
-        var imageFiles = Util.GetSupportedFormatImageFiles(input, includeSubdirectories);
-        if (imageFiles.Count == 0)
-            throw new Exception("No files found in input directory.");
+        var files = Util.GetSupportedFormatImageFiles(input, includeSubdirectories);
+        if (files.Count == 0)
+            throw new Exception("No supported files in input directory.");
 
-        logger.LogInformation("{Count} files found in {Input}", imageFiles.Count, input);
+        logger.LogInformation("Processing {Count} files from {Input}", files.Count, input);
 
-        var result = new ImageConversionResult { TotalFiles = imageFiles.Count };
+        var result = new ImageConversionResult { TotalFiles = files.Count };
         var sw = Stopwatch.StartNew();
+
+        var success = 0;
+        var failed = 0;
 
         var options = new ParallelOptions
         {
             MaxDegreeOfParallelism = maxParallelism ?? Environment.ProcessorCount
         };
 
-        var success = 0;
-        var failed = 0;
-
-        Parallel.ForEach(imageFiles, options, imageFile =>
+        Parallel.ForEach(files, options, file =>
         {
             try
             {
-                var outFile = outputPathFactory(imageFile);
-                var outFolder = Path.GetDirectoryName(outFile);
-                if (!string.IsNullOrEmpty(outFolder) && !Directory.Exists(outFolder))
-                    Directory.CreateDirectory(outFolder);
+                var outputPath = outPathFactory(file);
+                var dir = Path.GetDirectoryName(outputPath);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                    Directory.CreateDirectory(dir);
 
-                processImage((imageFile, outFile));
-                logger.LogDebug("Processed {File}", Util.MakeRelativePath(imageFile, input));
+                action((file, outputPath));
                 Interlocked.Increment(ref success);
             }
             catch (Exception ex)
             {
                 Interlocked.Increment(ref failed);
+
                 lock (result.Errors)
                 {
                     result.Errors.Add(new ImageProcessError
                     {
-                        File = Util.MakeRelativePath(imageFile, input),
+                        File = Util.MakeRelativePath(file, input),
                         Message = ex.Message
                     });
                 }
 
-                logger.LogError(ex, "Error processing {File}", Util.MakeRelativePath(imageFile, input));
+                logger.LogError(ex, "Error processing {File}", file);
             }
         });
 
@@ -126,59 +144,45 @@ public class ImageConverterNet(ILogger<ImageConverterNet> logger) : IImageConver
         result.Succeeded = success;
         result.Failed = failed;
 
-        logger.LogInformation("Completed: {Summary}", result);
+        logger.LogInformation("Completed: {Succeeded} succeeded, {Failed} failed in {Elapsed:F2}s",
+            success, failed, result.ElapsedSeconds);
 
         if (!string.IsNullOrEmpty(summaryPath))
-            WriteSummaryFile(summaryPath, result);
+            SaveSummary(summaryPath, result);
 
         return result;
     }
 
-    private static void WriteSummaryFile(string path, ImageConversionResult result)
-    {
-        var json = JsonSerializer.Serialize(result, new JsonSerializerOptions
-        {
-            WriteIndented = true
-        });
-
-        var dir = Path.GetDirectoryName(path);
-        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
-            Directory.CreateDirectory(dir);
-        File.WriteAllText(path, json);
-    }
-
-    private static void ConvertSingle(
-        string inputFile,
-        string outputFile,
-        MagickFormat outputFormat,
-        bool overwrite,
-        int? newWidth,
-        int? newHeight)
+    // === Core single-file conversion ===
+    private static void DoConvert(
+        string inputFile, string outputFile,
+        MagickFormat format, bool overwrite,
+        uint? newWidth, uint? newHeight)
     {
         if (File.Exists(outputFile))
         {
             if (!overwrite)
-                throw new IOException("Output file exists.");
+                throw new IOException($"Output already exists: {outputFile}");
             File.Delete(outputFile);
         }
 
         using var image = new MagickImage(inputFile);
+
         if (newWidth.HasValue && newHeight.HasValue)
             image.Resize(newWidth.Value, newHeight.Value);
-        image.Write(outputFile, outputFormat);
+
+        image.Write(outputFile, format);
     }
 
-    private static void ResizeSingle(
-        string inputFile,
-        string outputFile,
-        int width,
-        int height,
-        bool overwrite)
+    // === Core single-file resizing ===
+    private static void DoResize(
+        string inputFile, string outputFile,
+        uint width, uint height, bool overwrite)
     {
         if (File.Exists(outputFile))
         {
             if (!overwrite)
-                throw new IOException("Output file exists.");
+                throw new IOException($"Output already exists: {outputFile}");
             File.Delete(outputFile);
         }
 
@@ -187,6 +191,23 @@ public class ImageConverterNet(ILogger<ImageConverterNet> logger) : IImageConver
         image.Write(outputFile);
     }
 
+    // === Summary JSON ===
+    private static void SaveSummary(string path, ImageConversionResult result)
+    {
+        var dir = Path.GetDirectoryName(path);
+        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+            Directory.CreateDirectory(dir);
+
+        var json = JsonSerializer.Serialize(result, new JsonSerializerOptions
+        {
+            WriteIndented = true
+        });
+
+        File.WriteAllText(path, json);
+    }
+
+    // === Supported formats ===
     public IEnumerable<string> GetSupportedFormats() =>
-        Enum.GetNames<MagickFormat>().Select(x => x.ToLower(new CultureInfo("en-US")));
+        Enum.GetNames<MagickFormat>()
+            .Select(x => x.ToLower(CultureInfo.InvariantCulture));
 }
